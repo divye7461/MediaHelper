@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="public/thumbnail.jpg" alt="ThreadCraft AI Logo" />
+  <img src="public/thumbnail.jpg" alt="MediaHelper Logo" />
 </p>
 
-# ThreadCraft AI: Social Media Content Generator
+# MediaHelper: Social Media Content Generator
 
-ThreadCraft AI is a powerful Next.js application that leverages AI to generate engaging content for various social media platforms. This project uses cutting-edge technologies to provide users with an intuitive interface for creating Twitter threads, Instagram captions, and LinkedIn posts.
+MediaHelper is a powerful Next.js application that leverages AI to generate engaging content for various social media platforms. This project uses cutting-edge technologies to provide users with an intuitive interface for creating Twitter threads, Instagram captions, and LinkedIn posts.
 
 ## Features
 
