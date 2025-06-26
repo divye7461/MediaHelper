@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing`,
       client_reference_id: userId,
     });
+    console.log("Session Url...",session.url);
     return NextResponse.json({ sessionId: session.id });
   } catch (error: any) {
     console.error("Error creating checkout session:", error);
