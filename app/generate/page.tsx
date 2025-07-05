@@ -87,24 +87,46 @@ export default function GenerateContent() {
     }
   }, [isLoaded, isSignedIn, user, router]);
 
+  // const fetchUserPoints = async () => {
+  //   if (user?.id) {
+  //     console.log("Fetching points for user:", user.id);
+  //     const points = await getUserPoints(user.id);
+  //     console.log("Fetched points:", points);
+  //     setUserPoints(points);
+  //     if (points === 0) {
+  //       console.log("User has 0 points. Attempting to create/update user.");
+  //       const updatedUser = await createOrUpdateUser(
+  //         user.id,
+  //         user.emailAddresses[0].emailAddress,
+  //         user.fullName || ""
+  //       );
+  //       console.log("Updated user:", updatedUser);
+  //       if (updatedUser) {
+  //         setUserPoints(updatedUser.points);
+  //       }
+  //     }
+  //   }
+  // };
   const fetchUserPoints = async () => {
     if (user?.id) {
-      console.log("Fetching points for user:", user.id);
-      const points = await getUserPoints(user.id);
-      console.log("Fetched points:", points);
-      setUserPoints(points);
+      let points = await getUserPoints(user.id);
+
       if (points === 0) {
-        console.log("User has 0 points. Attempting to create/update user.");
         const updatedUser = await createOrUpdateUser(
           user.id,
           user.emailAddresses[0].emailAddress,
           user.fullName || ""
         );
-        console.log("Updated user:", updatedUser);
-        if (updatedUser) {
-          setUserPoints(updatedUser.points);
+
+        if (updatedUser?.points != null) {
+          points = updatedUser.points; // ✅ Use the correct 50
+        } else {
+          // fallback fetch again if needed
+          points = await getUserPoints(user.id);
         }
       }
+      console.log("Points...", points);
+      setUserPoints(points); // ✅ Now it's correct
     }
   };
 
@@ -125,7 +147,6 @@ export default function GenerateContent() {
       alert("Not enough points or API key not set.");
       return;
     }
-
     setIsLoading(true);
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
