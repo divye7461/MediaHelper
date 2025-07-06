@@ -8,7 +8,6 @@ const nextConfig = {
   },
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
-    MAILTRAP_API_TOKEN: process.env.MAILTRAP_API_TOKEN,
   },
 };
 
