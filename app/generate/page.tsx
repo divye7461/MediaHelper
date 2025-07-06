@@ -35,10 +35,11 @@ import {
 import { TwitterMock } from "@/components/social-mocks/TwitterMock";
 import { InstagramMock } from "@/components/social-mocks/InstagramMock";
 import { LinkedInMock } from "@/components/social-mocks/LinkedInMock";
+import { toast } from "react-toastify";
 import Link from "next/link";
 
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+// const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+// const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const contentTypes = [
   { value: "twitter", label: "Twitter Thread" },
@@ -71,11 +72,11 @@ export default function GenerateContent() {
   const [selectedHistoryItem, setSelectedHistoryItem] =
     useState<HistoryItem | null>(null);
 
-  useEffect(() => {
-    if (!apiKey) {
-      console.error("Gemini API key is not set");
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (!apiKey) {
+  //     console.error("Gemini API key is not set");
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -139,24 +140,19 @@ export default function GenerateContent() {
 
   const handleGenerate = async () => {
     if (
-      !genAI ||
       !user?.id ||
       userPoints === null ||
       userPoints < POINTS_PER_GENERATION
     ) {
-      alert("Not enough points or API key not set.");
+      alert("Not enough points.");
       return;
     }
-    setIsLoading(true);
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
-      let promptText = `Generate ${contentType} content about "${prompt}".`;
-      if (contentType === "twitter") {
-        promptText +=
-          " Provide a thread of 5 tweets, each under 280 characters.";
-      }
-      let imagePart: Part | null = null;
+    setIsLoading(true);
+
+    try {
+      let base64Image = null;
+
       if (contentType === "instagram" && image) {
         const reader = new FileReader();
         const imageData = await new Promise<string>((resolve) => {
@@ -170,46 +166,44 @@ export default function GenerateContent() {
           reader.readAsDataURL(image);
         });
 
-        const base64Data = imageData.split(",")[1];
-        if (base64Data) {
-          imagePart = {
-            inlineData: {
-              data: base64Data,
-              mimeType: image.type,
-            },
-          };
-        }
-        promptText +=
-          " Describe the image and incorporate it into the caption.";
+        base64Image = imageData.split(",")[1]; // only base64 part
       }
 
-      const parts: (string | Part)[] = [promptText];
-      if (imagePart) parts.push(imagePart);
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          prompt,
+          contentType,
+          base64Image,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      const result = await model.generateContent(parts);
-      const generatedText = result.response.text();
+      const data = await response.json();
+      console.log("🔁 API Response:", data);
+      if (!data.success) throw new Error(data.error);
 
       let content: string[];
+
       if (contentType === "twitter") {
-        content = generatedText
+        content = data.text
           .split("\n\n")
-          .filter((tweet) => tweet.trim() !== "");
+          .filter((tweet: string) => tweet.trim() !== "");
       } else {
-        content = [generatedText];
+        content = [data.text];
       }
 
       setGeneratedContent(content);
 
-      // Update points
+      // Update user points and save content (same as before)
       const updatedUser = await updateUserPoints(
         user.id,
         -POINTS_PER_GENERATION
       );
-      if (updatedUser) {
-        setUserPoints(updatedUser.points);
-      }
+      if (updatedUser) setUserPoints(updatedUser.points);
 
-      // Save generated content
       const savedContent = await saveGeneratedContent(
         user.id,
         content.join("\n\n"),
@@ -220,9 +214,11 @@ export default function GenerateContent() {
       if (savedContent) {
         setHistory((prevHistory) => [savedContent, ...prevHistory]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating content:", error);
-      setGeneratedContent(["An error occurred while generating content."]);
+      setGeneratedContent([
+        error?.message || "An error occurred while generating content.",
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -240,6 +236,7 @@ export default function GenerateContent() {
   };
 
   const copyToClipboard = (text: string) => {
+    toast.success("Copied to Clipboard");
     navigator.clipboard.writeText(text);
   };
 
